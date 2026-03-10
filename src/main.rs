@@ -278,6 +278,38 @@ enum InfoCommands {
         #[arg(long)]
         include_testnets: bool,
     },
+    GetTokenTrades {
+        #[arg(long)]
+        token_id: String,
+        #[arg(long)]
+        limit: Option<u64>,
+        #[arg(long)]
+        offset: Option<u64>,
+    },
+    GetTokenTransfers {
+        #[arg(long)]
+        token_id: String,
+        #[arg(long)]
+        limit: Option<u64>,
+        #[arg(long)]
+        offset: Option<u64>,
+    },
+    GetTokenActivity {
+        #[arg(long)]
+        token_id: String,
+        #[arg(long)]
+        limit: Option<u64>,
+        #[arg(long)]
+        offset: Option<u64>,
+        #[arg(long, action = ArgAction::Append)]
+        include_activity_type: Vec<String>,
+        #[arg(long, action = ArgAction::Append)]
+        ignore_activity_type: Vec<String>,
+        #[arg(long, action = ArgAction::Append)]
+        include_activity_subtype: Vec<String>,
+        #[arg(long, action = ArgAction::Append)]
+        ignore_activity_subtype: Vec<String>,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -893,6 +925,72 @@ async fn handle_info(context: &AppContext, command: InfoCommands) -> Result<()> 
             }),
             true,
         ),
+        InfoCommands::GetTokenTrades {
+            token_id,
+            limit,
+            offset,
+        } => (
+            json!({
+                "type": "getTokenTrades",
+                "token_id": token_id,
+                "limit": limit,
+                "offset": offset,
+            }),
+            false,
+        ),
+        InfoCommands::GetTokenTransfers {
+            token_id,
+            limit,
+            offset,
+        } => (
+            json!({
+                "type": "getTokenTransfers",
+                "token_id": token_id,
+                "limit": limit,
+                "offset": offset,
+            }),
+            false,
+        ),
+        InfoCommands::GetTokenActivity {
+            token_id,
+            limit,
+            offset,
+            include_activity_type,
+            ignore_activity_type,
+            include_activity_subtype,
+            ignore_activity_subtype,
+        } => {
+            let mut body = Map::new();
+            body.insert("type".to_string(), json!("getTokenActivity"));
+            body.insert("token_id".to_string(), json!(token_id));
+            insert_opt(&mut body, "limit", limit.map(|v| json!(v)));
+            insert_opt(&mut body, "offset", offset.map(|v| json!(v)));
+            if !include_activity_type.is_empty() {
+                body.insert(
+                    "include_activity_types".to_string(),
+                    json!(include_activity_type),
+                );
+            }
+            if !ignore_activity_type.is_empty() {
+                body.insert(
+                    "ignore_activity_types".to_string(),
+                    json!(ignore_activity_type),
+                );
+            }
+            if !include_activity_subtype.is_empty() {
+                body.insert(
+                    "include_activity_subtypes".to_string(),
+                    json!(include_activity_subtype),
+                );
+            }
+            if !ignore_activity_subtype.is_empty() {
+                body.insert(
+                    "ignore_activity_subtypes".to_string(),
+                    json!(ignore_activity_subtype),
+                );
+            }
+            (Value::Object(body), false)
+        }
     };
 
     let bearer = if needs_auth {
