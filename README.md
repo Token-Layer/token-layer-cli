@@ -34,6 +34,8 @@ If your goal is an agent that can trade, launch, transfer, and react to market e
   - `getTokenTrades`
   - `getTokenTransfers`
   - `getTokenActivity`
+  - `getTokenCandles`
+  - `getTokenStats`
 
 ## Installation
 
@@ -122,6 +124,8 @@ Market discovery:
 ```bash
 tokenlayer info get-tokens-v2 --order-by volume_24h --limit 20
 tokenlayer info get-token-activity --token-id <TOKEN_ID_OR_ADDRESS> --limit 20
+tokenlayer info get-token-candles --token-id <TOKEN_ID_OR_ADDRESS> --candle-interval 1h --limit 200
+tokenlayer info get-token-stats --token-id <TOKEN_ID_OR_ADDRESS>
 ```
 
 Execution:
@@ -197,8 +201,9 @@ A common loop:
 
 1. pull candidate markets (`getTokensV2`)
 2. inspect momentum (`getTokenTrades` / `getTokenActivity`)
-3. decide and execute (`tradeToken` / `transferToken`)
-4. persist outcomes in your agent memory/store
-5. repeat on schedule
+3. inspect chart + market stats (`getTokenCandles` / `getTokenStats`)
+4. decide and execute (`tradeToken` / `transferToken`)
+5. persist outcomes in your agent memory/store
+6. repeat on schedule
 
 This CLI is designed to be the execution + data plane for that loop.

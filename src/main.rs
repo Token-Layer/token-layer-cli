@@ -60,6 +60,35 @@ impl TradeDirection {
     }
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+enum CandleIntervalArg {
+    #[value(name = "1m")]
+    OneMinute,
+    #[value(name = "5m")]
+    FiveMinutes,
+    #[value(name = "15m")]
+    FifteenMinutes,
+    #[value(name = "1h")]
+    OneHour,
+    #[value(name = "4h")]
+    FourHours,
+    #[value(name = "1d")]
+    OneDay,
+}
+
+impl CandleIntervalArg {
+    fn as_str(&self) -> &'static str {
+        match self {
+            CandleIntervalArg::OneMinute => "1m",
+            CandleIntervalArg::FiveMinutes => "5m",
+            CandleIntervalArg::FifteenMinutes => "15m",
+            CandleIntervalArg::OneHour => "1h",
+            CandleIntervalArg::FourHours => "4h",
+            CandleIntervalArg::OneDay => "1d",
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[command(name = "token-layer")]
 #[command(about = "Token Layer Rust CLI")]
@@ -309,6 +338,28 @@ enum InfoCommands {
         include_activity_subtype: Vec<String>,
         #[arg(long, action = ArgAction::Append)]
         ignore_activity_subtype: Vec<String>,
+    },
+    GetTokenCandles {
+        #[arg(long)]
+        token_id: String,
+        #[arg(long, value_enum)]
+        candle_interval: Option<CandleIntervalArg>,
+        #[arg(long)]
+        venue: Option<String>,
+        #[arg(long)]
+        from_timestamp: Option<String>,
+        #[arg(long)]
+        to_timestamp: Option<String>,
+        #[arg(long)]
+        limit: Option<u64>,
+        #[arg(long)]
+        offset: Option<u64>,
+        #[arg(long)]
+        ascending: Option<bool>,
+    },
+    GetTokenStats {
+        #[arg(long)]
+        token_id: String,
     },
 }
 
@@ -991,6 +1042,43 @@ async fn handle_info(context: &AppContext, command: InfoCommands) -> Result<()> 
             }
             (Value::Object(body), false)
         }
+        InfoCommands::GetTokenCandles {
+            token_id,
+            candle_interval,
+            venue,
+            from_timestamp,
+            to_timestamp,
+            limit,
+            offset,
+            ascending,
+        } => {
+            let mut body = Map::new();
+            body.insert("type".to_string(), json!("getTokenCandles"));
+            body.insert("token_id".to_string(), json!(token_id));
+            insert_opt(
+                &mut body,
+                "candle_interval",
+                candle_interval.map(|v| json!(v.as_str())),
+            );
+            insert_opt(&mut body, "venue", venue.map(Value::String));
+            insert_opt(
+                &mut body,
+                "from_timestamp",
+                from_timestamp.map(Value::String),
+            );
+            insert_opt(&mut body, "to_timestamp", to_timestamp.map(Value::String));
+            insert_opt(&mut body, "limit", limit.map(|v| json!(v)));
+            insert_opt(&mut body, "offset", offset.map(|v| json!(v)));
+            insert_opt(&mut body, "ascending", ascending.map(|v| json!(v)));
+            (Value::Object(body), false)
+        }
+        InfoCommands::GetTokenStats { token_id } => (
+            json!({
+                "type": "getTokenStats",
+                "token_id": token_id,
+            }),
+            false,
+        ),
     };
 
     let bearer = if needs_auth {
