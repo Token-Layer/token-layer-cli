@@ -361,6 +361,10 @@ enum InfoCommands {
         #[arg(long)]
         token_id: String,
     },
+    GetTokenAbout {
+        #[arg(long)]
+        token_id: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1075,6 +1079,13 @@ async fn handle_info(context: &AppContext, command: InfoCommands) -> Result<()> 
         InfoCommands::GetTokenStats { token_id } => (
             json!({
                 "type": "getTokenStats",
+                "token_id": token_id,
+            }),
+            false,
+        ),
+        InfoCommands::GetTokenAbout { token_id } => (
+            json!({
+                "type": "getTokenAbout",
                 "token_id": token_id,
             }),
             false,
