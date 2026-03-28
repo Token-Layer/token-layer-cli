@@ -89,6 +89,23 @@ impl CandleIntervalArg {
     }
 }
 
+#[derive(Debug, Clone, ValueEnum)]
+enum TokenLaunchStageArg {
+    New,
+    Graduating,
+    Graduated,
+}
+
+impl TokenLaunchStageArg {
+    fn as_str(&self) -> &'static str {
+        match self {
+            TokenLaunchStageArg::New => "new",
+            TokenLaunchStageArg::Graduating => "graduating",
+            TokenLaunchStageArg::Graduated => "graduated",
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[command(name = "token-layer")]
 #[command(about = "Token Layer Rust CLI")]
@@ -288,12 +305,14 @@ enum InfoCommands {
         chain: Vec<String>,
         #[arg(long)]
         builder_code: Option<String>,
+        #[arg(long, value_enum)]
+        stage: Option<TokenLaunchStageArg>,
         #[arg(long)]
         order_by: Option<String>,
         #[arg(long)]
         order_direction: Option<String>,
         #[arg(long)]
-        page: Option<u64>,
+        offset: Option<u64>,
         #[arg(long)]
         limit: Option<u64>,
         #[arg(long)]
@@ -939,9 +958,10 @@ async fn handle_info(context: &AppContext, command: InfoCommands) -> Result<()> 
             keyword,
             chain,
             builder_code,
+            stage,
             order_by,
             order_direction,
-            page,
+            offset,
             limit,
             verified_only,
         } => {
@@ -955,13 +975,18 @@ async fn handle_info(context: &AppContext, command: InfoCommands) -> Result<()> 
                 body.insert("chains".to_string(), json!(chain));
             }
             insert_opt(&mut body, "builder_code", builder_code.map(Value::String));
+            insert_opt(
+                &mut body,
+                "stage",
+                stage.map(|value| Value::String(value.as_str().to_string())),
+            );
             insert_opt(&mut body, "order_by", order_by.map(Value::String));
             insert_opt(
                 &mut body,
                 "order_direction",
                 order_direction.map(Value::String),
             );
-            insert_opt(&mut body, "page", page.map(|v| json!(v)));
+            insert_opt(&mut body, "offset", offset.map(|v| json!(v)));
             insert_opt(&mut body, "limit", limit.map(|v| json!(v)));
             insert_opt(&mut body, "verified_only", verified_only.map(|v| json!(v)));
             (Value::Object(body), false)
